@@ -1,0 +1,6 @@
+
+*.jpg
+*.mat
+*.dat
+Figures/.DS_Store
+Figures/perturbations/.DS_Store
