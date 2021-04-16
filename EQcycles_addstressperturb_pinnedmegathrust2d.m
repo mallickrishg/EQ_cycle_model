@@ -51,26 +51,25 @@ fault_width = max(dipdist);
 % create velocity weakening region
 VW = zeros(rcv.N,1);
 topvw = floor(50e3/(fault_width/rcv.N));
-botvw = ceil(80e3/(fault_width/rcv.N));
+botvw = ceil(60e3/(fault_width/rcv.N));
 VW(topvw:botvw) = 1;
 VW = logical(VW);
 % make VW region pinned
 rcv.pinnedPosition = VW;
 % effective confining pressure on fault (MPa) using depth dependent normal
-rcv.sigma = 30.*ones(rcv.N,1);
-
+rcv.sigma = 100.*ones(rcv.N,1);
 
 % frictional parameters 
 rcv.a = 1e-2.*ones(rcv.N,1);
 % if you want to set the entire thing as VS
-rcv.b = rcv.a - 5e-3;
+rcv.b = rcv.a - 9e-3;
 
 % static friction coefficient
 rcv.mu0 = 0.1*ones(rcv.N,1);
 % numer of state parameters
 rcv.dgf=4;
 % characteristic weakening distance (m)
-rcv.l = 0.03.*ones(rcv.N,1);
+rcv.l = 0.064.*ones(rcv.N,1);
 % plate velocity (m/s)
 rcv.Vpl = 1e-9*ones(rcv.N,1);
 % reference slip rate (m/s)
@@ -79,22 +78,21 @@ rcv.Vo = 1e-6*ones(rcv.N,1);
 rcv.Vs = 3e3.*ones(rcv.N,1);
 
 % location and rheology of perturbation
-top    = floor(1e3/(fault_width/rcv.N));
+top    = floor(0.1e3/(fault_width/rcv.N));
 bottom = ceil(20e3/(fault_width/rcv.N));
-rcv.b(top:bottom) = rcv.a(top:bottom) - 0.1e-3;
+rcv.b(top:bottom) = rcv.a(top:bottom) - .1e-3;
 
 
 % minimum grid size
 fprintf(1,'grid size = %.2f m, minimum grid size = %.2f m\n',rcv.W(1),min([G*rcv.l(top)/rcv.b(top)/rcv.sigma(top) G*rcv.l(topvw-1)/rcv.b(topvw-1)/rcv.sigma(topvw-1)])) 
-fprintf(1,'a/b in VS regions = %.2f\n',rcv.a(1)/rcv.b(1))
-fprintf(1,'a/b in VW regions = %.2f\n',mean(rcv.a(VW)./rcv.b(VW)))
+fprintf(1,'a/b in VS regions = %.2f\n',rcv.a(top+1)/rcv.b(top+1))
 
 % add time of perturbation
-tperturb = 100*3.15e7;
+tperturb = [10]*3.15e7;
 % stress perturbation
-deltau = [-0.5];
+deltau = [-4];
 % total duration of simulation
-tend = 300*3.15e7;
+tend = 1200*3.15e7;
 %% Initialize State Vector
 Y0=zeros(rcv.N*rcv.dgf,1);
 % Fault patches
@@ -105,12 +103,13 @@ Y0(4:rcv.dgf:end) = log(rcv.Vpl*0.999./rcv.Vo); % log(V/Vo)
 
 % initialize the function handle with
 % set constitutive parameters
-% yp=@(t,y) eqcycle_accelerationage_pinnedmegathrust2d_ode(t,y,rcv,K);
-yp=@(t,y) eqcycle_accelerationslip_pinnedmegathrust2d_ode(t,y,rcv,K);
+ynp=@(t,y) eqcycle_acceleration_megathrust2d_ode(t,y,rcv,K);
+yp=@(t,y) eqcycle_accelerationage_pinnedmegathrust2d_ode(t,y,rcv,K);
+% yp=@(t,y) eqcycle_accelerationslip_pinnedmegathrust2d_ode(t,y,rcv,K);
 tic
 % Solve the system
 options=odeset('Refine',1,'RelTol',1e-7,'InitialStep',1e-3,'MaxStep',1e7); 
-[ti,Yi]=ode45(yp,[0 tperturb(1)],Y0,options);
+[ti,Yi]=ode45(ynp,[0 tperturb(1)],Y0,options);
 toc
 t = ti;
 Y = Yi;
@@ -137,7 +136,7 @@ V=repmat(rcv.Vo',size(Y,1)-1,1).*exp(Y(2:end,4:rcv.dgf:rcv.N*rcv.dgf));
 slip = Y(:,1:rcv.dgf:end);
 % Maximum Velocity
 Vmax=max(V,[],2);
-return
+
 %% % % % % % % % % % % % % % % % % % % % % % % % % % % %
 %                                                      %
 %                    F I G U R E S                     %
@@ -152,13 +151,16 @@ return
 %     (cmap('lightgreen',10,59,32));...
 %     flipud(cmap('orange',100,57,20));...
 %     flipud(cmap('orangered',100,40,25))];
-down = 50; %spatial downslampling
+down = 10; %spatial downslampling
 
 % plot Time and Time-step evolution
 figure(1);clf;set(gcf,'name','Time Evolution')
 subplot(3,2,[1 3])
 pcolor(t(1:down:end-1)./3.15e7,dipdist/1e3,log10(V(1:down:end,:)')), shading flat, hold on
-plot([tperturb' tperturb']./3.15e7,get(gca,'YLim'),'k','LineWidth',2)
+
+for i = 1:length(tperturb)
+    plot([tperturb(i) tperturb(i)]./3.15e7,get(gca,'YLim'),'k','LineWidth',2)
+end
 plot(get(gca,'XLim'),[dipdist(top) dipdist(top)]./1e3,'m-','Linewidth',1)
 plot(get(gca,'XLim'),[dipdist(bottom) dipdist(bottom)]./1e3,'m-','Linewidth',1)
 box on
@@ -166,15 +168,17 @@ set(gca,'YDir','reverse');h=colorbar('Location','NorthOutside');
 % colormap(cspec);
 title(h,'log_{10} V'),ylabel('Depth (km)');
 colormap(jet(32))
-caxis([-11 -7])
+caxis([-10 -8])
 set(gca,'XTickLabel','','FontSize',15)
 
 subplot(3,2,5);cla;
-% plot(t(1:down:end-1)/3.15e7,(mean(V(1:down:end,top:bottom),2)./rcv.Vpl(1)),'m-','LineWidth',2), hold on
 plot(t(1:down:end-1)/3.15e7,(max(V(1:down:end,top:bottom),[],2)./rcv.Vpl(1)),'m-','LineWidth',2), hold on
 plot(t(1:down:end-1)/3.15e7,(max(V(1:down:end,topvw:botvw),[],2)./rcv.Vpl(1)),'b-','LineWidth',1)
-plot([tperturb' tperturb']./3.15e7,get(gca,'YLim'),'k--','LineWidth',1)
-% legend('VS_{perturb}','VW')
+
+for i = 1:length(tperturb) 
+    plot([tperturb(i) tperturb(i)]./3.15e7,get(gca,'YLim'),'k--','LineWidth',1)
+end
+
 xlabel('Time (Yr)','Fontsize',15),ylabel('V/V_{pl}')
 axis tight,grid on,ylim([0 2])
 set(gca,'FontSize',15,'Color','none')
@@ -184,7 +188,11 @@ set(gca,'FontSize',15,'Color','none')
 % % % % % % % % % % % % % % % % % % % % % % % % % % % %%
 subplot(3,2,[2 4]);cla;
 imagesc(1:down:length(t)-1,dipdist/1e3,log10(V(1:down:end,:)')), shading flat, hold on
-plot([find(t==tperturb,1) find(t==tperturb,1)],get(gca,'Ylim'),'k','LineWidth',2)
+
+for i = 1:length(tperturb)
+    plot([find(t==tperturb(i),1) find(t==tperturb(i),1)],get(gca,'Ylim'),'k','LineWidth',2)
+end
+
 plot(get(gca,'XLim'),[dipdist(top) dipdist(top)]./1e3,'m-','Linewidth',1)
 plot(get(gca,'XLim'),[dipdist(bottom) dipdist(bottom)]./1e3,'m-','Linewidth',1)
 set(gca,'YDir','reverse');
@@ -194,22 +202,16 @@ caxis([-10 -8])
 set(gca,'XTickLabel','','FontSize',15)
 
 subplot(3,2,6);cla;
-plot(1:down:length(t)-1,(max(V(1:down:end,topvw:botvw),[],2)),'b-','LineWidth',1),hold on
-plot(1:down:length(t)-1,(mean(V(1:down:end,top:bottom),2)),'m-','LineWidth',2)
+plot(1:down:length(t)-1,(mean(V(1:down:end,top:bottom),2)),'m-','LineWidth',2), hold on
 xlabel('Time Steps','Fontsize',15),ylabel('V')
 axis tight, grid on
-plot([find(t==tperturb,1) find(t==tperturb,1)],get(gca,'Ylim'),'k--','LineWidth',1)
+
+for i = 1:length(tperturb)
+    plot([find(t==tperturb(i),1) find(t==tperturb(i),1)],get(gca,'Ylim'),'k--','LineWidth',1)
+end
 set(gca,'FontSize',15,'Color','none','YScale','log')
 
-
-%% %% compute displacement field %%%%%%%%%%%%%%%%%%%%
-ndisp = 20;
-xplt = linspace(10e3,120e3,ndisp)';
-[~,Gd]=rcv.displacementKernels([xplt,0.*xplt,0.*xplt],3);
-[~,Gddeep]=rcvdeep.displacementKernels([xplt,0.*xplt,0.*xplt],3);
-Gde = Gd(1:3:end,:);
-Gdz = Gd(3:3:end,:);
-discol = jet(ndisp);
+return
 
 %% % % % % % % % % % % % % % % % % % % % % % % % % % % % %
 %          Friction properties and model setup       %  %
@@ -226,7 +228,35 @@ grid on
 set(gca,'FontSize',15,'Color','none','YDir','reverse')
 ylabel('Down-dip distance (km)')
 xlabel('a-b')
+%% % % % % % % % % % % % % % % % % % % % % % % % % % %
+%                   Erics Awesome new figure                   %
+% % % % % % % % % % % % % % % % % % % % % % % % % % % %
+        
+figure(4),clf;set(gcf,'Color','White','name','Time Evolution')
+down = 5;
+downt = 10;
+ydata=repmat(dipdist(1:down:end)./1e3,[1,size(t(1:downt:end-1))])';
+xdata=slip(1:downt:end-1,1:down:end);
+% zdata=log10(V(1:downt:end,1:down:end));
+zdata=(V(1:downt:end,1:down:end));
 
+xsample=linspace(min(min(xdata(:))),max(max(xdata(:))),1e3);
+
+test1=griddata(xdata(:),ydata(:),zdata(:),xsample,dipdist(1:down:end)./1e3);
+
+pcolor(xsample,dipdist(1:down:end)./1e3,test1), shading flat
+
+set(gca,'YDir','reverse');
+h=colorbar('Location','NorthOutside');
+% caxis([-10 -8]);
+caxis(1e-9*[0 1])
+colormap(jet(20));
+title(h,'Log10 of Slip Rate (m/s)')
+xlabel('Accumulated slip (m)')
+ylabel('Down-dip distance (km)');
+
+ylim([0 16]),box on
+xlim([0 3])
 %% cumulative slip plot
 
 j = 1;
@@ -235,19 +265,19 @@ j = 1;
 Yn = [];
 Vn=[];
 index =[];
-Veq = 1e-3;
+Veq = 1e-9;
 
 for i = 1:length(t)-1
     if i == 1
         index(j) = i;
         j = j+1;
     elseif i > 1 && max(V(i,:)) >=Veq  
-        if ((t(i) - t(index(j-1))) > 3)
+        if ((t(i) - t(index(j-1))) > 0.3*3.15e7)
             index(j) = i;
             j = j+1;
         end
     else
-        if ((t(i) - t(index(j-1))) > 40/365*3.15e7)
+        if ((t(i) - t(index(j-1))) > 365/365*3.15e7)
             index(j) = i;
             j = j+1;
         end
@@ -279,3 +309,4 @@ xlabel('Distance along fault (km)')
 ylabel('Cumulative Slip (m)')
 axis tight, grid off
 set(gca,'FontSize',15,'Color','none')
+xlim([0 16])
