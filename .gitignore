@@ -4,3 +4,15 @@
 *.dat
 Figures/.DS_Store
 Figures/perturbations/.DS_Store
+viscoeqcycle2d/.DS_Store
+viscoeqcycle2d/DRIVER_interseismicviscoeqcycle.m
+viscoeqcycle2d/postseismicode_fault_shearzones2d.m
+*.png
+*.seg
+viscoeqcycle2d/make_GPS_locations.m
+viscoeqcycle2d/DRIVER_postseismic.m
+viscoeqcycle2d/DRIVER_viscoeqcycle.m
+viscoeqcycle2d/faults/lowercrust_lvl.shz
+viscoeqcycle2d/interseismicode_fault_shearzones2d.m
+viscoeqcycle2d/ode_fault_shearzones2d.m
+viscoeqcycle2d/plot_EQcycleresults.m
