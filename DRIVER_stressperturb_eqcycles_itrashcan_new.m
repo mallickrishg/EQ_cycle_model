@@ -60,7 +60,7 @@ rcv.mu0 = 0.2*ones(rcv.N,1);
 % numer of state parameters
 rcv.dgf=4;
 % characteristic weakening distance (m)
-rcv.l = 0.01.*ones(rcv.N,1);
+rcv.l = 0.05.*ones(rcv.N,1);
 % plate velocity (m/s)
 rcv.Vpl = 1e-9*ones(rcv.N,1);
 % reference slip rate (m/s)
@@ -81,9 +81,9 @@ fprintf(1,'a/b in VS regions = %.2f\n',rcv.a(1)/rcv.b(1))
 % add time of perturbation
 tperturb = 100*3.15e7;
 % stress perturbation
-deltau = [-0.5];
+deltau = [-2];
 % total duration of simulation
-tend = 500*3.15e7;
+tend = 1000*3.15e7;
 
 %% Vary parameter of interest and SOLVE (will be saved to directory)
 thetalaw = 1; % 1 - ageing law, 2 - slip law
@@ -91,12 +91,16 @@ down = 30;
 
 % vary parameter of choice
 nexp = 10;
-lvec = logspace(-3,-1,nexp);
-
+% lvec = logspace(-3,-1,nexp);
+% deltauvec = linspace(-2,-1,nexp);
+topvec = linspace(0.1e3,25e3,nexp);
 for i = 1:nexp
     disp(['Iteration number ' num2str(i)])
- 
-    rcv.l = lvec(i).*ones(rcv.N,1);
+    
+    top    = floor(topvec(i)/(fault_width/rcv.N));
+    bottom = ceil(30e3/(fault_width/rcv.N));
+    
+    rcv.b(top:bottom) = rcv.a(top:bottom) - 0.1e-3;
     
     [Y,V,t] = func_stressperturb_pinnedeqcycles(rcv,tperturb,deltau,top,bottom,tend,thetalaw);
 
