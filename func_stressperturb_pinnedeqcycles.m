@@ -38,8 +38,8 @@ if ~exist('K','var')
 end
 
 % minimum grid size
-fprintf(1,'grid size = %.2f m, minimum grid size = %.2f m\n',rcv.W(1),G*rcv.l(1)/max(rcv.b)/rcv.sigma(1))
-fprintf(1,'a/b in VS regions = %.2f\n',rcv.a(1)/rcv.b(1))
+% fprintf(1,'grid size = %.2f m, minimum grid size = %.2f m\n',rcv.W(1),G*rcv.l(1)/max(rcv.b)/rcv.sigma(1))
+% fprintf(1,'a/b in VS regions = %.2f\n',rcv.a(1)/rcv.b(1))
 
 
 % check if tperturb and deltau are the same length
