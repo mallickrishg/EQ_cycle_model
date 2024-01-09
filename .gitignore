@@ -16,3 +16,4 @@ viscoeqcycle2d/faults/lowercrust_lvl.shz
 viscoeqcycle2d/interseismicode_fault_shearzones2d.m
 viscoeqcycle2d/ode_fault_shearzones2d.m
 viscoeqcycle2d/plot_EQcycleresults.m
+.DS_Store
